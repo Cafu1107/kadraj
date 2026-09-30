@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Kadraj</RootNamespace>
+    <AssemblyName>Kadraj</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Cafu1107</Authors>
+    <Copyright>Copyright © 2026 Cafu1107 · GPL-3.0</Copyright>
+    <Product>Kadraj</Product>
+    <ApplicationIcon>Assets\kadraj.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+    <CameraDll>$(MSBuildThisFileDirectory)..\..\build\x64\Release\KadrajCamera.dll</CameraDll>
+  </PropertyGroup>
+
+  <!-- Built by src/Kadraj.Camera (C++, needs Visual Studio's MSBuild); see build.ps1 -->
+  <ItemGroup Condition="Exists('$(CameraDll)')">
+    <None Include="$(CameraDll)" Link="KadrajCamera.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Kestrel: serves the phone page and receives frames over WebSocket -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+
+  <!-- DirectML's debug layer is for development only; users never need it. -->
+  <Target Name="DropDirectMLDebugLayer" AfterTargets="Build;Publish">
+    <Delete Files="$(OutDir)DirectML.Debug.dll;$(PublishDir)DirectML.Debug.dll" />
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\**\*" />
+    <Resource Include="Assets\kadraj.ico" />
+  </ItemGroup>
+
+</Project>

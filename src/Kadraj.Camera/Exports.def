@@ -1,0 +1,9 @@
+LIBRARY KadrajCamera
+EXPORTS
+    DllGetClassObject          PRIVATE
+    DllCanUnloadNow            PRIVATE
+    DllRegisterServer          PRIVATE
+    DllUnregisterServer        PRIVATE
+    KadrajCamera_IsSupported
+    KadrajCamera_Create
+    KadrajCamera_Remove

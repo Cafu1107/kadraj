@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kadraj: your phone as a webcam, with AI backgrounds and effects</title>
+<meta name="description" content="Kadraj turns your phone into a Windows webcam with AI background blur and replacement, filters, frames and a name tag. No phone app. Free and open source.">
+<meta name="theme-color" content="#0f1012">
+<link rel="icon" href="assets/icon.png">
+<meta property="og:title" content="Kadraj: your phone as a webcam">
+<meta property="og:description" content="AI backgrounds, filters, frames and a name tag for Zoom, Teams, Discord and Meet. No phone app. Free and open source.">
+<meta property="og:image" content="https://cafu1107.github.io/kadraj/assets/banner.png">
+<meta property="og:url" content="https://cafu1107.github.io/kadraj/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1012; --panel: #16171a; --raised: #1d1f23; --line: #2a2d33;
+    --text: #ecedef; --muted: #9a9ea7; --faint: #6b6f78;
+    --accent: #ff5a36; --accent-soft: rgba(255, 90, 54, .14); --live: #34d399;
+    --radius: 18px; --max: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { line-height: 1.12; letter-spacing: -.02em; margin: 0; }
+  h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+  .lead { color: var(--muted); font-size: 18px; max-width: 620px; }
+  section { padding: 96px 0; }
+
+  /* Nav */
+  nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    background: rgba(15, 16, 18, .72); border-bottom: 1px solid rgba(42, 45, 51, .6); }
+  nav .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; text-decoration: none; }
+  .brand img { width: 30px; height: 30px; }
+  .links { display: flex; gap: 22px; margin-left: 12px; }
+  .links a { color: var(--muted); text-decoration: none; font-size: 15px; transition: color .15s; }
+  .links a:hover { color: var(--text); }
+  .spacer { flex: 1; }
+  .lang { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px 10px;
+    font: 600 13px Inter, sans-serif; cursor: pointer; }
+  .lang:hover { color: var(--text); border-color: var(--faint); }
+
+  .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 12px; padding: 12px 20px; font-weight: 600;
+    text-decoration: none; transition: transform .15s ease-out, background .15s, border-color .15s; white-space: nowrap; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 30px rgba(255, 90, 54, .28); }
+  .btn-primary:hover { background: #ff6b4a; }
+  .btn-ghost { border: 1px solid var(--line); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--faint); }
+  .btn-small { padding: 8px 14px; font-size: 14px; border-radius: 10px; }
+  .btn svg { width: 18px; height: 18px; }
+
+  /* Hero */
+  html { overflow-x: hidden; }
+  .hero { padding: 72px 0 40px; position: relative; overflow-x: clip; } /* the glow must not widen the page on phones */
+  .hero::before { content: ""; position: absolute; inset: -200px -20% auto; height: 900px; z-index: -1;
+    background: radial-gradient(600px 400px at 70% 45%, rgba(255, 90, 54, .16), transparent 70%),
+                radial-gradient(500px 360px at 15% 10%, rgba(59, 130, 246, .08), transparent 70%); }
+  .hero h1 { font-size: clamp(40px, 6.4vw, 72px); font-weight: 700; max-width: 820px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero .lead { margin: 22px 0 32px; font-size: clamp(17px, 2vw, 20px); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .meta { margin-top: 18px; color: var(--faint); font-size: 14px; display: flex; gap: 8px 18px; flex-wrap: wrap; }
+  .meta span::before { content: "●"; color: var(--live); font-size: 9px; margin-right: 7px; vertical-align: 2px; }
+
+  .showcase { position: relative; margin-top: 56px; }
+  .window { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #0b0b0c;
+    box-shadow: 0 40px 120px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .02); }
+  .window img { width: 100%; }
+  .phone { position: absolute; right: -2%; bottom: -8%; width: 21%; min-width: 130px; transform: rotate(3deg);
+    filter: drop-shadow(0 30px 50px rgba(0, 0, 0, .65)); }
+
+  .apps { margin-top: 64px; display: flex; align-items: center; justify-content: center; gap: 12px 30px; flex-wrap: wrap;
+    color: var(--faint); font-size: 15px; }
+  .apps b { color: var(--muted); font-weight: 600; }
+
+  /* Bento */
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 44px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; overflow: hidden;
+    display: flex; flex-direction: column; gap: 10px; }
+  .card h3 { font-size: 20px; font-weight: 650; }
+  .card p { margin: 0; color: var(--muted); }
+  .card .icon { width: 40px; height: 40px; border-radius: 11px; background: var(--accent-soft); display: grid; place-items: center; font-size: 20px; }
+  .card img.fill { margin-top: auto; border-radius: 12px; border: 1px solid var(--line); }
+  .c-4 { grid-column: span 4; } .c-2 { grid-column: span 2; } .c-3 { grid-column: span 3; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tags span { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); color: var(--muted); }
+  .stat { font-size: 44px; font-weight: 700; letter-spacing: -.03em; color: var(--text); }
+  .stat small { font-size: 18px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+
+  /* Compare slider */
+  .compare { position: relative; margin-top: 44px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+    aspect-ratio: 16 / 9; user-select: none; -webkit-user-select: none; touch-action: pan-y; cursor: ew-resize; background: #000; }
+  .compare img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .compare .after { clip-path: inset(0 0 0 var(--split, 50%)); }
+  .compare .handle { position: absolute; top: 0; bottom: 0; left: var(--split, 50%); width: 2px; background: #fff; transform: translateX(-1px); }
+  .compare .handle::after { content: "⟷"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #111; display: grid; place-items: center; font-size: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .4); }
+  .compare .label { position: absolute; bottom: 16px; padding: 6px 12px; border-radius: 8px; background: rgba(15, 16, 18, .82);
+    font-size: 14px; font-weight: 600; }
+  .compare .label.l { left: 16px; } .compare .label.r { right: 16px; }
+  .compare input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px; counter-reset: step; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+  .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px;
+    border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 18px; }
+  .step h3 { font-size: 19px; margin-bottom: 8px; }
+  .step p { margin: 0; color: var(--muted); }
+  .note { margin-top: 18px; color: var(--faint); font-size: 14px; }
+
+  /* Privacy */
+  .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .checks li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; color: var(--muted); }
+  .checks li::before { content: "✓"; width: 28px; height: 28px; border-radius: 8px; background: rgba(52, 211, 153, .12); color: var(--live);
+    display: grid; place-items: center; font-weight: 700; }
+  .checks b { color: var(--text); font-weight: 600; }
+
+  /* FAQ */
+  .faq { margin-top: 36px; display: grid; gap: 10px; max-width: 820px; }
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 0 22px; }
+  summary { cursor: pointer; padding: 18px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--muted); font-size: 22px; line-height: 1; transition: transform .2s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { margin: 0 0 18px; color: var(--muted); }
+  code { font: 14px "Cascadia Mono", Consolas, monospace; background: var(--raised); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; color: var(--text); }
+
+  /* Final CTA + footer */
+  .final { text-align: center; border: 1px solid var(--line); border-radius: 24px; padding: 64px 24px;
+    background: radial-gradient(500px 240px at 50% 0%, rgba(255, 90, 54, .18), transparent 70%), var(--panel); }
+  .final .lead { margin: 16px auto 28px; }
+  .final .cta { justify-content: center; }
+  footer { padding: 40px 0 56px; color: var(--faint); font-size: 14px; }
+  footer .wrap { display: flex; gap: 12px 24px; flex-wrap: wrap; justify-content: space-between; }
+  footer a { color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .links { display: none; }
+    .grid { grid-template-columns: 1fr; }
+    .c-4, .c-2, .c-3 { grid-column: auto; }
+    .steps, .privacy { grid-template-columns: 1fr; }
+    .phone { width: 28%; right: 0; bottom: -10%; }
+    section { padding: 72px 0; }
+  }
+  @media (max-width: 520px) {
+    nav .btn-small { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="assets/icon.png" alt="">Kadraj</a>
+    <div class="links">
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="https://github.com/Cafu1107/kadraj">GitHub</a>
+    </div>
+    <div class="spacer"></div>
+    <button class="lang" id="lang" type="button" aria-label="Language">TR</button>
+    <a class="btn btn-primary btn-small" href="https://github.com/Cafu1107/kadraj/releases/latest/download/Kadraj-win-x64.zip" data-i18n="cta.download.short">Download</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="hero.eyebrow">Free &amp; open-source webcam app for Windows</div>
+    <h1 data-i18n-html="hero.title">Your phone is a <em>better webcam.</em></h1>
+    <p class="lead" data-i18n="hero.lead">Kadraj turns your phone into your PC's camera, with AI background blur and replacement, filters, frames and a name tag. Nothing to install on the phone: scan a QR code and you're live.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/Cafu1107/kadraj/releases/latest/download/Kadraj-win-x64.zip">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zm0 13 7.5 1.1v-7H3zm8.4 1.2L21 21v-8.5h-9.6zm0-15.4v7.2H21V3z"/></svg>
+        <span data-i18n="cta.download">Download for Windows</span>
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/Cafu1107/kadraj">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+        <span data-i18n="cta.github">View on GitHub</span>
+      </a>
+    </div>
+    <div class="meta"><span data-i18n="meta.win">Windows 11</span><span data-i18n="meta.free">Free, GPL-3.0</span><span data-i18n="meta.local">Works on your Wi-Fi, no cloud</span></div>
+
+    <div class="showcase">
+      <div class="window"><img src="assets/demo.gif" width="960" height="586" alt="Kadraj switching between looks: blurred background with a name tag, studio backdrop with a neon frame, mountain picture, polaroid, film and noir" data-i18n-alt="hero.alt"></div>
+      <img class="phone" src="screenshots/phone-en.png" alt="The phone page streaming the camera" data-src-tr="screenshots/phone-tr.png" data-src-en="screenshots/phone-en.png">
+    </div>
+
+    <div class="apps"><span data-i18n="apps.label">Shows up as a camera in</span><b>Zoom</b><b>Microsoft Teams</b><b>Discord</b><b>Google Meet</b><b data-i18n="apps.more">…and any camera app</b></div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="features.eyebrow">Features</div>
+    <h2 data-i18n="features.title">Everything a video call needs</h2>
+    <p class="lead" data-i18n="features.lead">Effects are applied before the picture reaches your meeting app, so they work everywhere, and the preview shows exactly what others see.</p>
+
+    <div class="grid">
+      <div class="card c-4">
+        <div class="icon">🧠</div>
+        <h3 data-i18n="f.bg.title">AI background that holds up</h3>
+        <p data-i18n="f.bg.text">Blur the room, use the studio or sunset backdrop, or put any picture behind you. Robust Video Matting keeps headsets, hands and moving arms in the picture, without flicker.</p>
+        <img class="fill" src="screenshots/backgrounds-en.png" alt="Original, blur, studio and picture backgrounds" data-src-tr="screenshots/backgrounds-tr.png" data-src-en="screenshots/backgrounds-en.png">
+      </div>
+      <div class="card c-2">
+        <div class="icon">📱</div>
+        <h3 data-i18n="f.noapp.title">No phone app</h3>
+        <p data-i18n="f.noapp.text">The phone opens a page in its browser. Front or back camera, 720p or 1080p, flashlight, and the screen stays awake.</p>
+        <img class="fill" src="screenshots/phone-en.png" alt="Phone page" data-src-tr="screenshots/phone-tr.png" data-src-en="screenshots/phone-en.png" style="width:70%;align-self:center;border:0">
+      </div>
+      <div class="card c-3">
+        <div class="icon">🎨</div>
+        <h3 data-i18n="f.look.title">Filters &amp; frames</h3>
+        <p data-i18n="f.look.text">Eight colour looks with brightness, contrast and saturation. Frames in six colours, or load your own transparent PNG.</p>
+        <div class="tags"><span>Cinematic</span><span>Vintage</span><span>Noir</span><span>Polaroid</span><span>Film</span><span>Neon</span><span data-i18n="f.look.more">+ more</span></div>
+        <img class="fill" src="assets/looks-grid.jpg" alt="Neon, polaroid, film and viewfinder looks">
+      </div>
+      <div class="card c-3">
+        <div class="icon">🏷️</div>
+        <h3 data-i18n="f.tag.title">Name tag</h3>
+        <p data-i18n="f.tag.text">A clean lower-third with your name and title, the way TV does it. It sits above the frame and never gets mirrored.</p>
+        <img class="fill" src="screenshots/effects-en.png" alt="Effects tab with a name tag" data-src-tr="screenshots/effects-tr.png" data-src-en="screenshots/effects-en.png">
+      </div>
+      <div class="card c-2">
+        <div class="icon">⚡</div>
+        <h3 data-i18n="f.fast.title">Fast on your GPU</h3>
+        <div class="stat">~15<small>ms</small></div>
+        <p data-i18n="f.fast.text">per frame for background removal with DirectML, measured on the author's PC. Falls back to the CPU when there's no suitable graphics card.</p>
+      </div>
+      <div class="card c-4">
+        <div class="icon">🔒</div>
+        <h3 data-i18n="f.private.title">Private by design</h3>
+        <p data-i18n="f.private.text">No account, no cloud, no telemetry. Your video travels over your own Wi-Fi to your own PC, only from phones you paired with the QR code.</p>
+        <div class="tags"><span data-i18n="f.private.t1">Local network only</span><span data-i18n="f.private.t2">128-bit pairing key</span><span data-i18n="f.private.t3">Encrypted on disk</span><span data-i18n="f.private.t4">Open source</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare" style="padding-top:0">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="compare.eyebrow">Try it</div>
+    <h2 data-i18n="compare.title">Drag to swap the background</h2>
+    <div class="compare" id="compare">
+      <img src="assets/compare-before.jpg" alt="Original background: a lake">
+      <img class="after" src="assets/compare-after.jpg" alt="Replaced background: mountains at sunset">
+      <div class="handle"></div>
+      <span class="label l" data-i18n="compare.before">Your room</span>
+      <span class="label r" data-i18n="compare.after">Kadraj</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Before and after" id="split">
+    </div>
+  </div>
+</section>
+
+<section id="how" style="padding-top:0">
+  <div class="wrap">
+    <div class="eyebrow" data-i18n="how.eyebrow">How it works</div>
+    <h2 data-i18n="how.title">Live in three steps</h2>
+    <div class="steps">
+      <div class="step"><h3 data-i18n="s1.title">Download &amp; run</h3><p data-i18n="s1.text">Extract the zip and run Kadraj.exe. Nothing else to install.</p></div>
+      <div class="step"><h3 data-i18n="s2.title">Install the camera once</h3><p data-i18n="s2.text">Click “Install camera”. Windows asks for permission once, and “Kadraj” joins your camera list.</p></div>
+      <div class="step"><h3 data-i18n="s3.title">Scan &amp; go live</h3><p data-i18n="s3.text">On the same Wi-Fi, scan the QR code with your phone and tap Start. Pick “Kadraj” in your meeting app.</p></div>
+    </div>
+    <p class="note" data-i18n="how.note">The first time, the phone warns about the connection. That's expected: the address is your own PC. Choose Advanced → Continue; it asks only once.</p>
+  </div>
+</section>
+
+<section id="privacy" style="padding-top:0">
+  <div class="wrap privacy">
+    <div>
+      <div class="eyebrow" data-i18n="p.eyebrow">Privacy &amp; security</div>
+      <h2 data-i18n="p.title">Your camera, your network</h2>
+      <p class="lead" style="margin-top:16px" data-i18n="p.lead">Kadraj was built to be safe to leave running. The code is open for anyone to check.</p>
+    </div>
+    <ul class="checks">
+      <li><span data-i18n-html="p.1"><b>Local network only.</b> Connections from outside private address ranges are refused.</span></li>
+      <li><span data-i18n-html="p.2"><b>Paired phones only.</b> A 128-bit key in the QR code; “Reset pairing” makes a new one.</span></li>
+      <li><span data-i18n-html="p.3"><b>Your account only.</b> Frames reach the camera through memory only you and the camera service can open.</span></li>
+      <li><span data-i18n-html="p.4"><b>Encrypted secrets.</b> The pairing key and certificate are protected for your Windows account.</span></li>
+      <li><span data-i18n-html="p.5"><b>No telemetry.</b> Kadraj sends nothing anywhere and switches ONNX Runtime's reporting off.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="eyebrow">FAQ</div>
+    <h2 data-i18n="faq.title">Questions</h2>
+    <div class="faq">
+      <details><summary data-i18n="q1">What do I need?</summary><p data-i18n="a1">A Windows 11 PC and a phone with a modern browser on the same Wi-Fi. A DirectX 12 graphics card makes the AI background faster, but it isn't required.</p></details>
+      <details><summary data-i18n="q2">Windows says “Windows protected your PC”</summary><p data-i18n="a2">Kadraj isn't code-signed yet, so SmartScreen doesn't know it. Click More info → Run anyway. Each release has a SHA-256 checksum you can compare.</p></details>
+      <details><summary data-i18n="q3">“Kadraj” isn't in my meeting app</summary><p data-i18n="a3">Click “Install camera” in Kadraj once, keep Kadraj open, then restart the meeting app so it looks for cameras again. The virtual camera needs Windows 11.</p></details>
+      <details><summary data-i18n="q4">The phone can't connect</summary><p data-i18n="a4">Both devices must be on the same Wi-Fi (guest networks often isolate devices), and Kadraj must be allowed in Windows Firewall. With a VPN or virtual machines, try the other addresses listed under the QR code.</p></details>
+      <details><summary data-i18n="q5">Is it really free?</summary><p data-i18n-html="a5">Yes. Kadraj is open source under the GPL-3.0, with no ads, accounts or paid tiers. The AI background uses <a href="https://github.com/PeterL1n/RobustVideoMatting">Robust Video Matting</a>.</p></details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="final">
+      <h2 data-i18n="final.title">Give your phone a new job</h2>
+      <p class="lead" data-i18n="final.lead">Free for Windows 11. Takes about a minute to set up.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/Cafu1107/kadraj/releases/latest/download/Kadraj-win-x64.zip" data-i18n="cta.download">Download for Windows</a>
+        <a class="btn btn-ghost" href="https://github.com/Cafu1107/kadraj/releases/latest" data-i18n="cta.notes">Release notes</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span data-i18n-html="footer.left">Kadraj is free software under the <a href="https://github.com/Cafu1107/kadraj/blob/main/LICENSE">GPL-3.0</a>. Made by <a href="https://github.com/Cafu1107">Cafu1107</a>.</span>
+    <span data-i18n-html="footer.right">Demo photos from <a href="https://unsplash.com">Unsplash</a>.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Before / after slider
+  const compare = document.getElementById('compare');
+  const split = document.getElementById('split');
+  const set = v => compare.style.setProperty('--split', v + '%');
+  split.addEventListener('input', () => set(split.value));
+
+  // English / Turkish
+  const tr = {
+    'nav.features': 'Özellikler', 'nav.how': 'Nasıl çalışır', 'nav.faq': 'SSS',
+    'cta.download.short': 'İndir', 'cta.download': 'Windows için indir', 'cta.github': "GitHub'da gör", 'cta.notes': 'Sürüm notları',
+    'hero.eyebrow': 'Windows için ücretsiz ve açık kaynak webcam uygulaması',
+    'hero.title': 'Telefonun <em>daha iyi bir webcam.</em>',
+    'hero.lead': 'Kadraj telefonunu bilgisayarının kamerası yapar; yapay zekâ ile arka plan bulanıklaştırma ve değiştirme, filtreler, çerçeveler ve isim etiketiyle. Telefona hiçbir şey kurmak yok: QR kodu okut, yayındasın.',
+    'hero.alt': 'Kadraj görünümler arasında geçiyor: isim etiketli bulanık arka plan, neon çerçeveli stüdyo, dağ manzarası, polaroid, film ve noir',
+    'meta.win': 'Windows 11', 'meta.free': 'Ücretsiz, GPL-3.0', 'meta.local': 'Kendi Wi-Fi’ında çalışır, bulut yok',
+    'apps.label': 'Kamera olarak görünür:', 'apps.more': '…ve kamera kullanan her uygulama',
+    'features.eyebrow': 'Özellikler', 'features.title': 'Görüntülü görüşmede gereken her şey',
+    'features.lead': 'Efektler görüntü görüşme uygulamasına ulaşmadan önce uygulanır; bu yüzden her yerde çalışır ve önizlemede ne görüyorsan karşı taraf da onu görür.',
+    'f.bg.title': 'Sağlam yapay zekâ arka planı',
+    'f.bg.text': 'Odanı bulanıklaştır, stüdyo ya da gün batımı zeminini kullan veya arkana istediğin resmi koy. Robust Video Matting kulaklığı, elleri ve hareket eden kolları titremeden görüntüde tutar.',
+    'f.noapp.title': 'Telefona uygulama yok',
+    'f.noapp.text': 'Telefon tarayıcısında bir sayfa açar. Ön ya da arka kamera, 720p ya da 1080p, flaş; ekran da kapanmaz.',
+    'f.look.title': 'Filtreler ve çerçeveler',
+    'f.look.text': 'Parlaklık, kontrast ve doygunluk ayarıyla sekiz renk görünümü. Altı renkte çerçeveler ya da kendi saydam PNG’n.',
+    'f.look.more': '+ daha fazlası',
+    'f.tag.title': 'İsim etiketi',
+    'f.tag.text': 'Televizyondaki gibi ad ve unvanlı sade bir alt yazı. Çerçevenin üstünde durur, asla ters dönmez.',
+    'f.fast.title': 'Ekran kartında hızlı',
+    'f.fast.text': 'DirectML ile arka plan kaldırmada kare başına (geliştiricinin bilgisayarında ölçüldü). Uygun ekran kartı yoksa işlemcide çalışır.',
+    'f.private.title': 'Baştan gizlilik odaklı',
+    'f.private.text': 'Hesap yok, bulut yok, telemetri yok. Görüntün kendi Wi-Fi’ından kendi bilgisayarına gider; yalnızca QR kodla eşleştirdiğin telefonlardan.',
+    'f.private.t1': 'Yalnızca yerel ağ', 'f.private.t2': '128 bit eşleşme anahtarı', 'f.private.t3': 'Diskte şifreli', 'f.private.t4': 'Açık kaynak',
+    'compare.eyebrow': 'Dene', 'compare.title': 'Sürükle, arka planı değiştir', 'compare.before': 'Senin odan', 'compare.after': 'Kadraj',
+    'how.eyebrow': 'Nasıl çalışır', 'how.title': 'Üç adımda yayında',
+    's1.title': 'İndir ve çalıştır', 's1.text': 'Zip’i çıkar ve Kadraj.exe’yi çalıştır. Başka bir şey kurmana gerek yok.',
+    's2.title': 'Kamerayı bir kez kur', 's2.text': '“Kamerayı kur”a tıkla. Windows bir kez izin ister ve “Kadraj” kamera listene eklenir.',
+    's3.title': 'Okut ve yayına geç', 's3.text': 'Aynı Wi-Fi’da QR kodu telefonunla okut ve Başlat’a dokun. Görüşme uygulamanda “Kadraj”ı seç.',
+    'how.note': 'İlk seferde telefon bağlantı uyarısı gösterir. Bu normal: adres kendi bilgisayarın. Gelişmiş → Devam et de; yalnızca bir kez sorar.',
+    'p.eyebrow': 'Gizlilik ve güvenlik', 'p.title': 'Senin kameran, senin ağın',
+    'p.lead': 'Kadraj açık bırakıldığında güvenli olacak şekilde tasarlandı. Kodu herkesin incelemesine açık.',
+    'p.1': '<b>Yalnızca yerel ağ.</b> Özel adres aralıkları dışından gelen bağlantılar reddedilir.',
+    'p.2': '<b>Yalnızca eşleşmiş telefonlar.</b> QR kodda 128 bitlik bir anahtar; “Eşleşmeyi sıfırla” yenisini oluşturur.',
+    'p.3': '<b>Yalnızca senin hesabın.</b> Kareler kameraya yalnızca senin ve kamera servisinin açabildiği bir bellekten ulaşır.',
+    'p.4': '<b>Şifreli anahtarlar.</b> Eşleşme anahtarı ve sertifika Windows hesabına özel korunur.',
+    'p.5': '<b>Telemetri yok.</b> Kadraj hiçbir yere veri göndermez ve ONNX Runtime’ın raporlamasını kapatır.',
+    'faq.title': 'Sorular',
+    'q1': 'Neye ihtiyacım var?', 'a1': 'Windows 11 bir bilgisayar ve aynı Wi-Fi’da modern tarayıcısı olan bir telefon. DirectX 12 destekli bir ekran kartı yapay zekâ arka planını hızlandırır, ama şart değil.',
+    'q2': 'Windows “Bilgisayarınız korundu” diyor', 'a2': 'Kadraj henüz kod imzalı değil, bu yüzden SmartScreen onu tanımıyor. Ek bilgi → Yine de çalıştır’a tıkla. Her sürümün karşılaştırabileceğin bir SHA-256 özeti var.',
+    'q3': 'Görüşme uygulamamda “Kadraj” yok', 'a3': 'Kadraj’da bir kez “Kamerayı kur”a tıkla, Kadraj’ı açık tut, sonra görüşme uygulamasını yeniden başlat ki kameraları tekrar arasın. Sanal kamera Windows 11 gerektirir.',
+    'q4': 'Telefon bağlanamıyor', 'a4': 'İki cihaz da aynı Wi-Fi’da olmalı (misafir ağları cihazları genelde birbirinden ayırır) ve Windows Güvenlik Duvarı’nda Kadraj’a izin verilmiş olmalı. VPN ya da sanal makine varsa QR kodun altındaki diğer adresleri dene.',
+    'q5': 'Gerçekten ücretsiz mi?', 'a5': 'Evet. Kadraj GPL-3.0 lisanslı açık kaynak bir yazılım; reklam, hesap ya da ücretli sürüm yok. Yapay zekâ arka planı <a href="https://github.com/PeterL1n/RobustVideoMatting">Robust Video Matting</a> kullanır.',
+    'final.title': 'Telefonuna yeni bir görev ver', 'final.lead': 'Windows 11 için ücretsiz. Kurulumu yaklaşık bir dakika sürer.',
+    'footer.left': 'Kadraj, <a href="https://github.com/Cafu1107/kadraj/blob/main/LICENSE">GPL-3.0</a> lisanslı özgür bir yazılımdır. <a href="https://github.com/Cafu1107">Cafu1107</a> tarafından yapıldı.',
+    'footer.right': 'Tanıtım fotoğrafları <a href="https://unsplash.com">Unsplash</a>’ten.',
+  };
+  const en = {};
+  document.querySelectorAll('[data-i18n]').forEach(el => en[el.dataset.i18n] = el.textContent);
+  document.querySelectorAll('[data-i18n-html]').forEach(el => en[el.dataset.i18nHtml] = el.innerHTML);
+  document.querySelectorAll('[data-i18n-alt]').forEach(el => en[el.dataset.i18nAlt] = el.alt);
+
+  const button = document.getElementById('lang');
+  function apply(lang) {
+    const dict = lang === 'tr' ? tr : en;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; if (dict[k] != null) el.textContent = dict[k]; });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => { const k = el.dataset.i18nHtml; if (dict[k] != null) el.innerHTML = dict[k]; });
+    document.querySelectorAll('[data-i18n-alt]').forEach(el => { const k = el.dataset.i18nAlt; if (dict[k] != null) el.alt = dict[k]; });
+    document.querySelectorAll('[data-src-tr]').forEach(el => el.src = lang === 'tr' ? el.dataset.srcTr : el.dataset.srcEn);
+    button.textContent = lang === 'tr' ? 'EN' : 'TR';
+    try { localStorage.setItem('kadraj-lang', lang); } catch { /* private mode: fine */ }
+  }
+  let saved = null;
+  try { saved = localStorage.getItem('kadraj-lang'); } catch { }
+  let lang = saved || ((navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
+  if (lang === 'tr') apply('tr');
+  button.addEventListener('click', () => { lang = lang === 'tr' ? 'en' : 'tr'; apply(lang); });
+})();
+</script>
+</body>
+</html>

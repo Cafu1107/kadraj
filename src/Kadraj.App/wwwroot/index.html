@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17181b">
+<title>Kadraj</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='14' fill='%2317181b'/%3E%3Cpath d='M15 23v-8h8M41 15h8v8M49 41v8h-8M23 49h-8v-8' stroke='%23ff5a36' stroke-width='5' fill='none'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23ecedef'/%3E%3Ccircle cx='32' cy='32' r='3.5' fill='%2317181b'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0f1012; --panel: #17181b; --raised: #1f2125; --line: #26282d;
+    --text: #ecedef; --muted: #8b8f98; --accent: #ff5a36; --live: #34d399;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+
+  .stage { position: relative; flex: 1; min-height: 0; background: #000; }
+  video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  video.mirror { transform: scaleX(-1); }
+
+  .pill { position: absolute; top: calc(env(safe-area-inset-top) + 12px); left: 12px;
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-size: 13px; font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill[data-state="live"] .dot { background: var(--live); }
+  .pill[data-state="error"] .dot { background: var(--accent); }
+
+  .message { position: absolute; inset: 0; display: grid; place-items: center; padding: 32px;
+    text-align: center; color: var(--muted); }
+  .message strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+
+  .bar { display: flex; gap: 10px; padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px);
+    background: var(--panel); border-top: 1px solid var(--line); }
+  button { appearance: none; border: 1px solid var(--line); background: var(--raised); color: var(--text);
+    font: inherit; font-weight: 600; border-radius: 12px; padding: 0 16px; min-height: 52px;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+    transition: transform .12s ease-out; }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .4; }
+  #toggle { flex: 1; background: var(--accent); border-color: var(--accent); color: #fff; }
+  #toggle.running { background: var(--raised); border-color: var(--line); color: var(--text); }
+  #torch.on { background: #fff4d6; border-color: #fff4d6; color: #1a1a1a; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="message" id="message"></div>
+    <div class="pill" id="pill" data-state="idle" hidden><span class="dot"></span><span id="status"></span></div>
+  </div>
+  <div class="bar">
+    <button id="toggle"></button>
+    <button id="flip" disabled></button>
+    <button id="torch" hidden></button>
+    <button id="quality"></button>
+  </div>
+
+<script>
+(() => {
+  const TEXT = {
+    en: {
+      start: 'Start', stop: 'Stop', flip: 'Flip', torch: 'Light',
+      ready: ['Ready', 'Tap Start to send this camera to your PC.'],
+      noKey: ['Scan the QR code', 'Open this page by scanning the QR code in the Kadraj app on your PC.'],
+      insecure: ['Camera blocked', 'The browser only allows the camera on a secure page. Open the link from the QR code (it starts with https).'],
+      denied: ['No camera access', 'Allow camera access for this page in your browser settings, then tap Start.'],
+      badKey: ['Link expired', 'Scan the QR code in the Kadraj app again.'],
+      replaced: ['Another device took over', 'Tap Start to switch back to this phone.'],
+      connecting: 'Connecting to PC…', live: 'Live', reconnecting: 'Reconnecting…',
+    },
+    tr: {
+      start: 'Başlat', stop: 'Durdur', flip: 'Çevir', torch: 'Işık',
+      ready: ['Hazır', 'Bu kamerayı bilgisayara göndermek için Başlat\'a dokun.'],
+      noKey: ['QR kodu okut', 'Bu sayfayı bilgisayardaki Kadraj uygulamasındaki QR kodu okutarak aç.'],
+      insecure: ['Kamera engellendi', 'Tarayıcı kamerayı sadece güvenli sayfada açar. QR koddaki bağlantıyı aç (https ile başlar).'],
+      denied: ['Kamera izni yok', 'Tarayıcı ayarlarından bu sayfaya kamera izni ver, sonra Başlat\'a dokun.'],
+      badKey: ['Bağlantı geçersiz', 'Kadraj uygulamasındaki QR kodu tekrar okut.'],
+      replaced: ['Başka bir cihaz bağlandı', 'Bu telefona geri dönmek için Başlat\'a dokun.'],
+      connecting: 'Bilgisayara bağlanıyor…', live: 'Canlı', reconnecting: 'Yeniden bağlanıyor…',
+    },
+  };
+  const t = TEXT[(navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en'];
+  document.documentElement.lang = t === TEXT.tr ? 'tr' : 'en';
+
+  const $ = id => document.getElementById(id);
+  const video = $('video'), message = $('message'), pill = $('pill'), status = $('status');
+  const toggleBtn = $('toggle'), flipBtn = $('flip'), qualityBtn = $('quality'), torchBtn = $('torch');
+
+  const key = new URLSearchParams(location.search).get('k');
+  const QUALITIES = [{ label: '720p', w: 1280, h: 720, q: 0.8 }, { label: '1080p', w: 1920, h: 1080, q: 0.75 }];
+  const MAX_BUFFERED = 512 * 1024; // skip frames instead of queueing when Wi-Fi is slow
+
+  let running = false, facing = 'environment', quality = 0;
+  let stream = null, ws = null, wakeLock = null, reconnectTimer = 0;
+  let busy = false, framesSent = 0, bytesSent = 0;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  toggleBtn.textContent = t.start;
+  flipBtn.textContent = t.flip;
+  torchBtn.textContent = t.torch;
+  qualityBtn.textContent = QUALITIES[quality].label;
+
+  function showMessage(pair) {
+    if (!pair) { message.hidden = true; return; }
+    const box = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = pair[0];
+    box.append(title, pair[1]);
+    message.replaceChildren(box);
+    message.hidden = false;
+  }
+  function setStatus(text, state) {
+    pill.hidden = false;
+    pill.dataset.state = state;
+    status.textContent = text;
+  }
+
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    showMessage(t.insecure); toggleBtn.disabled = qualityBtn.disabled = true; return;
+  }
+  if (!key) {
+    showMessage(t.noKey); toggleBtn.disabled = qualityBtn.disabled = true; return;
+  }
+  showMessage(t.ready);
+
+  async function openCamera() {
+    const q = QUALITIES[quality];
+    stream?.getTracks().forEach(track => track.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: facing }, width: { ideal: q.w }, height: { ideal: q.h }, frameRate: { ideal: 30 } },
+    });
+    video.srcObject = stream;
+    video.classList.toggle('mirror', facing === 'user'); // mirror only the local preview, never the stream
+    await video.play();
+
+    // Flashlight, where the camera has one (mostly Android). A new stream starts with it off.
+    const track = stream.getVideoTracks()[0];
+    torchBtn.hidden = !track.getCapabilities?.().torch;
+    torchBtn.classList.remove('on');
+  }
+
+  torchBtn.onclick = async () => {
+    const track = stream?.getVideoTracks()[0];
+    if (!track) return;
+    const on = !torchBtn.classList.contains('on');
+    try {
+      await track.applyConstraints({ advanced: [{ torch: on }] });
+      torchBtn.classList.toggle('on', on);
+    } catch { torchBtn.hidden = true; }
+  };
+
+  function connect() {
+    clearTimeout(reconnectTimer);
+    setStatus(t.connecting, 'idle');
+    ws = new WebSocket(`wss://${location.host}/ws?k=${encodeURIComponent(key)}`);
+    ws.binaryType = 'arraybuffer';
+    ws.onopen = async () => {
+      ws.send(JSON.stringify({ type: 'hello', device: await deviceName() }));
+      setStatus(t.live, 'live');
+    };
+    ws.onmessage = e => {
+      if (typeof e.data === 'string' && JSON.parse(e.data).type === 'replaced') stop(t.replaced);
+    };
+    ws.onclose = e => {
+      if (!running) return;
+      if (e.code === 1008) { stop(t.badKey); return; }
+      setStatus(t.reconnecting, 'error');
+      reconnectTimer = setTimeout(connect, 1500);
+    };
+  }
+
+  async function deviceName() {
+    const ua = navigator.userAgent;
+    if (/iPad/.test(ua)) return 'iPad';
+    if (/iPhone/.test(ua)) return 'iPhone';
+    try {
+      const hints = await navigator.userAgentData?.getHighEntropyValues(['model']);
+      if (hints?.model) return hints.model;
+    } catch { /* not available */ }
+    const android = ua.match(/Android[^;]*;\s*([^;)]+)/);
+    return android && android[1].trim() !== 'K' ? android[1].trim() : (/Android/.test(ua) ? 'Android' : 'Phone');
+  }
+
+  // Send the newest camera frame as JPEG whenever the socket has room.
+  function scheduleFrame() {
+    if (!running) return;
+    if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) video.requestVideoFrameCallback(onFrame);
+    else setTimeout(onFrame, 1000 / 30);
+  }
+  function onFrame() {
+    scheduleFrame();
+    if (busy || !ws || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > MAX_BUFFERED) return;
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w || !h) return;
+    busy = true;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    ctx.drawImage(video, 0, 0, w, h);
+    canvas.toBlob(blob => {
+      busy = false;
+      if (!blob || !ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(blob);
+      framesSent++;
+      bytesSent += blob.size;
+    }, 'image/jpeg', QUALITIES[quality].q);
+  }
+
+  setInterval(() => {
+    if (running && ws?.readyState === WebSocket.OPEN) {
+      setStatus(`${t.live} · ${framesSent} fps · ${(bytesSent / 1048576).toFixed(1)} MB/s`, 'live');
+    }
+    framesSent = 0; bytesSent = 0;
+  }, 1000);
+
+  async function keepAwake() {
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* optional */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (running && document.visibilityState === 'visible') keepAwake();
+  });
+
+  async function start() {
+    toggleBtn.disabled = true;
+    try {
+      await openCamera();
+    } catch (err) {
+      toggleBtn.disabled = false;
+      showMessage(t.denied);
+      return;
+    }
+    running = true;
+    showMessage(null);
+    toggleBtn.textContent = t.stop;
+    toggleBtn.classList.add('running');
+    toggleBtn.disabled = false;
+    flipBtn.disabled = false;
+    connect();
+    keepAwake();
+    scheduleFrame();
+  }
+
+  function stop(reason) {
+    running = false;
+    clearTimeout(reconnectTimer);
+    if (ws) { ws.onclose = null; ws.close(); ws = null; }
+    stream?.getTracks().forEach(track => track.stop());
+    stream = null;
+    video.srcObject = null;
+    wakeLock?.release().catch(() => {});
+    wakeLock = null;
+    pill.hidden = true;
+    toggleBtn.textContent = t.start;
+    toggleBtn.classList.remove('running');
+    flipBtn.disabled = true;
+    torchBtn.hidden = true;
+    showMessage(reason || t.ready);
+  }
+
+  toggleBtn.onclick = () => running ? stop() : start();
+  flipBtn.onclick = async () => {
+    facing = facing === 'environment' ? 'user' : 'environment';
+    try { await openCamera(); } catch { stop(t.denied); }
+  };
+  qualityBtn.onclick = async () => {
+    quality = (quality + 1) % QUALITIES.length;
+    qualityBtn.textContent = QUALITIES[quality].label;
+    if (running) { try { await openCamera(); } catch { stop(t.denied); } }
+  };
+})();
+</script>
+</body>
+</html>

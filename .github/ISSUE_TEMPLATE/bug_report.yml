@@ -1,0 +1,42 @@
+name: Bug report / Hata bildirimi
+description: Something doesn't work as expected / Bir şey beklendiği gibi çalışmıyor
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Ne oldu?
+      description: What you expected, what happened instead, and how to make it happen again.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kadraj version / sürümü
+      placeholder: v1.0.0 (shown next to the title / başlığın yanında)
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version / sürümü
+      placeholder: Windows 11 24H2
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and browser / Telefon ve tarayıcı
+      placeholder: Pixel 8, Chrome
+  - type: input
+    id: app
+    attributes:
+      label: Meeting app / Görüşme uygulaması
+      placeholder: Zoom, Teams, Discord, Meet…
+  - type: input
+    id: background
+    attributes:
+      label: Background status / Arka plan durumu
+      description: If the background feature is involved, the text next to "Background" (e.g. "GPU · 16 ms") and your graphics card.
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshots / Ekran görüntüleri

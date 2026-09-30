@@ -1,0 +1,189 @@
+<Window x:Class="Kadraj.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kadraj" Icon="Assets/kadraj.ico" Width="1180" Height="720" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14"
+        UseLayoutRounding="True">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="340" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Preview -->
+        <Border Margin="20,20,10,20" CornerRadius="14" Background="Black">
+            <Grid>
+                <Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="Linear" />
+
+                <StackPanel x:Name="WaitingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="460">
+                    <Border Width="64" Height="64" CornerRadius="18" Background="{StaticResource Raised}"
+                            BorderBrush="{StaticResource Line}" BorderThickness="1" Margin="0,0,0,18" HorizontalAlignment="Center">
+                        <TextBlock x:Name="WaitingIcon" Text="&#xE8EA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   FontSize="28" Foreground="{StaticResource Accent}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock x:Name="WaitingTitle" FontSize="20" FontWeight="SemiBold" TextAlignment="Center" />
+                    <TextBlock x:Name="WaitingHint" Margin="0,8,0,0" Foreground="{StaticResource Muted}"
+                               TextAlignment="Center" TextWrapping="Wrap" LineHeight="22" />
+                </StackPanel>
+
+                <Border x:Name="LiveBadge" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Margin="16" Padding="10,5" CornerRadius="12" Background="#B3000000">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource Live}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="LiveText" Margin="8,0,0,0" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="1" Margin="10,20,20,20" CornerRadius="14" Padding="24"
+                Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Kadraj" FontSize="22" FontWeight="SemiBold" />
+                        <TextBlock x:Name="VersionText" Style="{StaticResource Label}" Margin="8,0,0,4" VerticalAlignment="Bottom" />
+                    </StackPanel>
+                    <TextBlock x:Name="Tagline" Margin="0,2,0,0" Foreground="{StaticResource Muted}" />
+                </StackPanel>
+
+                <Border DockPanel.Dock="Top" Margin="0,18,0,0" Padding="3" CornerRadius="10" Background="{StaticResource Raised}">
+                    <UniformGrid Columns="2">
+                        <RadioButton x:Name="ConnectTab" GroupName="Tabs" Style="{StaticResource TabButton}" IsChecked="True" Checked="Tab_Checked" />
+                        <RadioButton x:Name="EffectsTab" GroupName="Tabs" Style="{StaticResource TabButton}" Checked="Tab_Checked" />
+                    </UniformGrid>
+                </Border>
+
+                <Grid Margin="0,20,0,0">
+                <!-- Connect tab -->
+                <DockPanel x:Name="ConnectPanel">
+
+                <!-- Live stats -->
+                <Grid DockPanel.Dock="Bottom" Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition /><RowDefinition /><RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="DeviceLabel" Style="{StaticResource Label}" Margin="0,0,16,6" />
+                    <TextBlock x:Name="DeviceValue" Grid.Column="1" Text="—" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
+                    <TextBlock x:Name="ResolutionLabel" Grid.Row="1" Style="{StaticResource Label}" Margin="0,0,16,6" />
+                    <TextBlock x:Name="ResolutionValue" Grid.Row="1" Grid.Column="1" Text="—" Margin="0,0,0,6" />
+                    <TextBlock x:Name="FpsLabel" Grid.Row="2" Style="{StaticResource Label}" Margin="0,0,16,0" />
+                    <TextBlock x:Name="FpsValue" Grid.Row="2" Grid.Column="1" Text="—" />
+                </Grid>
+
+                <!-- Virtual camera -->
+                <Border DockPanel.Dock="Bottom" Margin="0,16,0,0" Padding="14" CornerRadius="10"
+                        Background="{StaticResource Raised}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="CameraDot" Width="8" Height="8" Fill="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="CameraTitle" Margin="8,0,0,0" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock x:Name="CameraStatus" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Muted}" FontSize="13" />
+                        <Button x:Name="CameraButton" Margin="0,10,0,0" Visibility="Collapsed"
+                                Style="{StaticResource PrimaryButton}" Click="CameraButton_Click" />
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+                    </ScrollViewer.Resources>
+                    <StackPanel>
+                        <TextBlock x:Name="ConnectTitle" FontWeight="SemiBold" />
+
+                        <Border Background="White" CornerRadius="10" Padding="4" Margin="0,12,0,0"
+                                HorizontalAlignment="Left">
+                            <Image x:Name="QrImage" Width="176" Height="176"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                        </Border>
+
+                        <TextBox x:Name="AddressText" Margin="0,10,0,0" IsReadOnly="True" BorderThickness="0"
+                                 Background="Transparent" Foreground="{StaticResource Accent}"
+                                 FontFamily="Cascadia Mono, Consolas" FontSize="13" Padding="0" />
+                        <Button x:Name="ResetPairingButton" Margin="0,8,0,0" HorizontalAlignment="Left"
+                                Style="{StaticResource LinkButton}" Click="ResetPairing_Click" />
+
+                        <StackPanel x:Name="OtherAddressesPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                            <TextBlock x:Name="OtherAddressesLabel" Style="{StaticResource Label}" Margin="0,0,0,6" />
+                            <WrapPanel x:Name="OtherAddressesList" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+                </DockPanel>
+
+                <!-- Effects tab -->
+                <ScrollViewer x:Name="EffectsPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled" Margin="0,0,-12,0" Padding="0,0,12,0">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+                    </ScrollViewer.Resources>
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock x:Name="BackgroundStatus" DockPanel.Dock="Right" Style="{StaticResource Label}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock x:Name="BackgroundTitle" FontWeight="SemiBold" />
+                        </DockPanel>
+                        <WrapPanel x:Name="BackgroundChips" />
+                        <Grid x:Name="BlurRow" Margin="0,4,0,0" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="BlurLabel" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <Slider x:Name="BlurSlider" Grid.Column="1" Style="{StaticResource LevelSlider}" Minimum="0" Maximum="1"
+                                    ValueChanged="Blur_Changed" />
+                        </Grid>
+
+                        <TextBlock x:Name="FilterTitle" Style="{StaticResource SectionTitle}" />
+                        <WrapPanel x:Name="FilterChips" />
+
+                        <DockPanel Margin="0,20,0,10">
+                            <Button x:Name="ResetAdjustments" DockPanel.Dock="Right" Style="{StaticResource LinkButton}"
+                                    VerticalAlignment="Center" Click="ResetAdjustments_Click" />
+                            <TextBlock x:Name="AdjustTitle" FontWeight="SemiBold" />
+                        </DockPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition /><RowDefinition /><RowDefinition />
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Name="BrightnessLabel" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,14,4" />
+                            <Slider x:Name="BrightnessSlider" Grid.Column="1" Style="{StaticResource LevelSlider}" Margin="0,0,0,4" ValueChanged="Adjustment_Changed" />
+                            <TextBlock x:Name="ContrastLabel" Grid.Row="1" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,14,4" />
+                            <Slider x:Name="ContrastSlider" Grid.Row="1" Grid.Column="1" Style="{StaticResource LevelSlider}" Margin="0,0,0,4" ValueChanged="Adjustment_Changed" />
+                            <TextBlock x:Name="SaturationLabel" Grid.Row="2" Style="{StaticResource Label}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                            <Slider x:Name="SaturationSlider" Grid.Row="2" Grid.Column="1" Style="{StaticResource LevelSlider}" ValueChanged="Adjustment_Changed" />
+                        </Grid>
+
+                        <TextBlock x:Name="FrameTitle" Style="{StaticResource SectionTitle}" />
+                        <WrapPanel x:Name="FrameChips" />
+                        <StackPanel x:Name="AccentSwatches" Orientation="Horizontal" Margin="0,6,0,0" />
+
+                        <TextBlock x:Name="NameTagTitle" Style="{StaticResource SectionTitle}" />
+                        <CheckBox x:Name="NameTagSwitch" Style="{StaticResource Switch}" Click="NameTag_Changed" />
+                        <TextBox x:Name="NameBox" Style="{StaticResource Field}" MaxLength="40" TextChanged="NameTag_Changed" />
+                        <TextBox x:Name="TitleBox" Style="{StaticResource Field}" MaxLength="60" TextChanged="NameTag_Changed" />
+
+                        <TextBlock x:Name="ImageTitle" Style="{StaticResource SectionTitle}" />
+                        <CheckBox x:Name="MirrorSwitch" Style="{StaticResource Switch}" Click="Image_Changed" />
+                        <CheckBox x:Name="FillSwitch" Style="{StaticResource Switch}" Click="Image_Changed" />
+                    </StackPanel>
+                </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
